@@ -1,3 +1,7 @@
+ /*  
+   Autor: FOKO FOTSO
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,19 +17,21 @@ int main()
     myFile = fopen("knoten.txt", "r");
 
     // Variable initialisieren
-    //int paths_length = number_of_path(NUMBER_OF_NODES);
+    const int paths_length = number_of_path(NUMBER_OF_NODES);
     int matDistance[MAX_SIZE][MAX_SIZE];
     int matVitesse[MAX_SIZE][MAX_SIZE];
-    int matPath[NUMBER_OF_NODES-1][PATH_LENGTH(NUMBER_OF_NODES)] = {0};
-    int matResult[PATH_LENGTH(NUMBER_OF_NODES)][RESULT_COL_SIZE] = {0};
+    int matPath[ (NUMBER_OF_NODES-1) * paths_length];
+    memset( matPath, 0, (NUMBER_OF_NODES-1)*paths_length*sizeof(int));
+    int matResult[paths_length][RESULT_COL_SIZE];
+    memset( matResult, 0, paths_length*RESULT_COL_SIZE*sizeof(int));
 
     //Programm Ausfuehren
-    execute_program(myFile,matResult, matDistance, matVitesse, matPath);
+    execute_program(myFile, matResult, matDistance, matVitesse, matPath, paths_length);
 
     return 0;
 }
 
-void execute_program(FILE *file, int matResult[][RESULT_COL_SIZE], int matDistance[][MAX_SIZE], int matVitesse[][MAX_SIZE], int matPath[][PATH_LENGTH(NUMBER_OF_NODES)])
+void execute_program(FILE *file, int matResult[][RESULT_COL_SIZE], int matDistance[][MAX_SIZE], int matVitesse[][MAX_SIZE], int matPath[], int paths_length)
 {
     int max = MAX_SIZE * sizeof(int) + MAX_SIZE * sizeof(char);
     char chaine[max];
@@ -37,20 +43,20 @@ void execute_program(FILE *file, int matResult[][RESULT_COL_SIZE], int matDistan
 
     if (file != NULL)
     {
-       size_t taille = 0;
+       size_t mat_size = 0;
        char temp[1];
        while( fgets(chaine, max, file) != NULL  && !error){
            if(chaine[0]=='D')
            {
              temp[0] = chaine[2];
-             taille = atoi(temp);
-             read_matrix(file, taille, matDistance);
+             mat_size = atoi(temp);
+             read_matrix(file, mat_size, matDistance);
            }
            else if(chaine[0]=='V')
            {
              temp[0] = chaine[2];
-             taille = atoi(temp);
-             read_matrix(file, taille, matVitesse);
+             mat_size = atoi(temp);
+             read_matrix(file, mat_size, matVitesse);
            }
            else
            {
@@ -59,13 +65,13 @@ void execute_program(FILE *file, int matResult[][RESULT_COL_SIZE], int matDistan
            }
 
         }
-        if(NUMBER_OF_NODES <= MAX_SIZE){
+        if(NUMBER_OF_NODES <= MAX_SIZE  && mat_size == MAX_SIZE){
              // Generiiert alle möglichen Strecken in ein 2d array
              generate_paths(NUMBER_OF_NODES, matPath);
              // Berechne Laenge und Fahrzeit und speiche in eine array
-             berechnung_laenge_fahrzeit(matResult, matPath, matDistance, matVitesse);
+             berechnung_laenge_fahrzeit(matResult, matPath, matDistance, matVitesse, paths_length);
              // Gibt die Ergenisse aus
-             show(matResult);
+             show(matResult, paths_length);
         }
         fclose(file);
     }
@@ -76,17 +82,22 @@ void execute_program(FILE *file, int matResult[][RESULT_COL_SIZE], int matDistan
 }
 
 
-void read_matrix(FILE *file, const size_t taille, int mat[][MAX_SIZE])
+void read_matrix(FILE *file, const size_t mat_size, int mat[][MAX_SIZE])
 {
-    int max = taille * sizeof(int) + taille * sizeof(char);
+    int max = mat_size * sizeof(int) + mat_size * sizeof(char);
     int count = 0;
     char chaine[max];
-    char nchaine[max*taille+taille* sizeof(char)];
+    char nchaine[mat_size * max + mat_size * sizeof(char)];
     strcpy(nchaine, "\0");
+    
+    if (mat_size != MAX_SIZE){
+       printf("Matrix-Size in knoten.txt is different to the setting MAX_SIZE\n");
+       return ;
+    }
 
     if (file != NULL)
     {
-       while (count < taille)
+       while (count < mat_size)
        {
          // store file-lign content in chaine
          fgets(chaine, max, file);
@@ -94,7 +105,7 @@ void read_matrix(FILE *file, const size_t taille, int mat[][MAX_SIZE])
          nchaine[strlen(nchaine)-1] = ' ';
          ++count;
        }
-       fill_matrix(mat, nchaine, taille);
+       fill_matrix(mat, nchaine);
     }
     else
     {
@@ -102,14 +113,14 @@ void read_matrix(FILE *file, const size_t taille, int mat[][MAX_SIZE])
     }
 }
 
-void fill_matrix(int mat[][MAX_SIZE], char chaine[], size_t taille)
+void fill_matrix(int mat[][MAX_SIZE], char chaine[])
 {
     int len = strlen(chaine);
     int row = 0;
     int col = 0;
     int i = 0;
     int tem = 0;
-    int longest_number = len/(taille * taille); 
+    int longest_number = len/(MAX_SIZE * MAX_SIZE); 
     char* arrint;
     arrint = (char *) malloc(longest_number * sizeof(char));
 
@@ -141,7 +152,7 @@ void fill_matrix(int mat[][MAX_SIZE], char chaine[], size_t taille)
      }
 }
 
-void generate_paths(int num_nodes, int matPath[][PATH_LENGTH(NUMBER_OF_NODES)]) {
+void generate_paths(int num_nodes, int matPath[]) {
 
     int i = 0;
     int j = 0;
@@ -156,7 +167,7 @@ void generate_paths(int num_nodes, int matPath[][PATH_LENGTH(NUMBER_OF_NODES)]) 
       for(i=1; i<=num_nodes; i++) {
         for(j=1; j<=num_nodes; j++) {
           if(i!=j){
-            matPath[0][row] = 10*i+j;
+            matPath[row] = 10*i+j;
             row++;
           }
         }
@@ -167,7 +178,7 @@ void generate_paths(int num_nodes, int matPath[][PATH_LENGTH(NUMBER_OF_NODES)]) 
         for(j=1; j<=num_nodes; j++) {
           for(k=1; k<=num_nodes; k++) {
             if(i!=j && i!=k && j!=k){
-               matPath[1][row] = 100*i+10*j+k;
+               matPath[row] = 100*i+10*j+k;
                row++;
             }
           }
@@ -180,7 +191,7 @@ void generate_paths(int num_nodes, int matPath[][PATH_LENGTH(NUMBER_OF_NODES)]) 
           for(k=1; k<=num_nodes; k++) {
              for(l=1; l<=num_nodes; l++) {
                 if(i!=j && i!=k && i!=l && j!=k && j!=l && k!=l){
-                   matPath[2][row] = 1000*i+100*j+10*k+l;
+                   matPath[row] = 1000*i+100*j+10*k+l;
                    row++;
                 }
              }
@@ -190,10 +201,10 @@ void generate_paths(int num_nodes, int matPath[][PATH_LENGTH(NUMBER_OF_NODES)]) 
    }
 }
 
-void berechnung_laenge_fahrzeit(int matResult[][RESULT_COL_SIZE], int matPath[][PATH_LENGTH(NUMBER_OF_NODES)], int matDistance[][MAX_SIZE], int matVitesse[][MAX_SIZE]){
+void berechnung_laenge_fahrzeit(int matResult[][RESULT_COL_SIZE], int matPath[], int matDistance[][MAX_SIZE], int matVitesse[][MAX_SIZE], int paths_length){
 
-    int row = 0;
     int path = 0;
+    int count = 0; 
     char pathStr[5];
     int i = 0;
     int j = 0;
@@ -204,14 +215,12 @@ void berechnung_laenge_fahrzeit(int matResult[][RESULT_COL_SIZE], int matPath[][
     char ck[2];
     char cl[2];
     int col_result = 0;
-    int paths_length = PATH_LENGTH(NUMBER_OF_NODES);
 
     if(NUMBER_OF_NODES >= 2) {
        for(int col = 0; col < paths_length; col++) {
-          if(matPath[row][col] != 0) {
-              path = matPath[row][col];
+          if(matPath[col] != 0) {
+              path = matPath[col];
               sprintf(pathStr, "%d", path);
-
               if (strlen(pathStr) == 2)
               {
                  ci[0] = pathStr[0];
@@ -224,21 +233,22 @@ void berechnung_laenge_fahrzeit(int matResult[][RESULT_COL_SIZE], int matPath[][
                  matResult[col][4] = matDistance[i-1][j-1];
                  matResult[col][5] = (int)(matDistance[i-1][j-1]*60/matVitesse[i-1][j-1]);
                  ++col_result;
+                 count  =  col_result;
+                 printf("count %d and len %d \n", count, path);
               }
               else
               {
-                printf("Error with the length of path row %d and col %d \n", col, row);
+                 break;
               }
           }
        }
-       row++;
      }
      if(NUMBER_OF_NODES >= 3) {
        for(int col = col_result; col < paths_length; col++) {
-        if(matPath[row][col] != 0) {
-              path = matPath[row][col];
+        if(matPath[col] != 0) {
+              path = matPath[col];
               sprintf(pathStr, "%d", path);
-              if (lenTrimStr(pathStr)  == 3)
+              if (lenTrimStr(pathStr) == 3)
               {
                  ci[0] = pathStr[0];
                  cj[0] = pathStr[1];
@@ -252,20 +262,21 @@ void berechnung_laenge_fahrzeit(int matResult[][RESULT_COL_SIZE], int matPath[][
                  matResult[col][4] = matDistance[i-1][j-1] + matDistance[j-1][k-1];
                  matResult[col][5] = TIME_STOP + round(((float)matDistance[i-1][j-1]*60/matVitesse[i-1][j-1])
                                                + ((float)matDistance[j-1][k-1]*60/matVitesse[j-1][k-1]));
-              ++col_result;
+                 ++col_result;
+                 count  =  col_result;
+                 printf("count %d and len %d \n", count, path);
               }
               else
               {
-                 printf("Error with the length of path row %d and col %d \n", col, row);
+                 break;
               }
            }
          }
-       row++;
      }
      if(NUMBER_OF_NODES == 4) {
        for(int col = col_result; col < paths_length; col++) {
-          if(matPath[row][col] != 0) {
-              path = matPath[row][col];
+          if(matPath[col] != 0) {
+              path = matPath[col];
               sprintf(pathStr, "%d", path);
               if (lenTrimStr(pathStr)== 4)
               {
@@ -286,10 +297,11 @@ void berechnung_laenge_fahrzeit(int matResult[][RESULT_COL_SIZE], int matPath[][
                  matResult[col][5] = 2*TIME_STOP + round(((float)matDistance[i-1][j-1]*60/matVitesse[i-1][j-1])
                                                  + ((float)matDistance[j-1][k-1]*60/matVitesse[j-1][k-1])
                                                  + ((float)matDistance[k-1][l-1]*60/matVitesse[k-1][l-1]));
+                 printf("count %d and len %d \n", ++count, path);
               }
               else
               {
-                 printf("Error with the length of path row %d and col %d \n", col, row);
+                 printf("length at position col is %lu \n", strlen(pathStr));
               }
            }
          }
@@ -312,7 +324,7 @@ int lenTrimStr(char str[]) {
 }
 
 
-void show(int matResult[][RESULT_COL_SIZE]) {
+void show(int matResult[][RESULT_COL_SIZE], int paths_length) {
       int i = 0;
       int j = 0;
       int k = 0;
@@ -324,7 +336,7 @@ void show(int matResult[][RESULT_COL_SIZE]) {
       char str[2];
 
     printf("%s %s %s \n", "Strecke ", "Laenge [km]", " Fahrzeit [Min]");
-     for(int row = 0; row < PATH_LENGTH(NUMBER_OF_NODES); row++) {
+     for(int row = 0; row < paths_length; row++) {
         i = matResult[row][0];
         j = matResult[row][1];
         k = matResult[row][2];
@@ -348,7 +360,6 @@ void show(int matResult[][RESULT_COL_SIZE]) {
      }
 }
 
-/* 
 int number_of_path(int num_nodes) {
      int num_paths = 0;
      int denumerator = 1;
@@ -365,9 +376,7 @@ int number_of_path(int num_nodes) {
      }
      return num_paths;
 }
- */
 
-/* 
 int fac(int n) {
     if(n == 0 || n == 1){
      return 1;
@@ -380,4 +389,4 @@ int fac(int n) {
      return n * fac(n-1);
     }
 }
- */
+
