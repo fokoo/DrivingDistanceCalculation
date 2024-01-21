@@ -90,7 +90,6 @@ void read_matrix(FILE *file, const size_t mat_size, int mat[][MAX_SIZE])
        printf("Matrix-Size in knoten.txt is different to the setting MAX_SIZE\n");
        return ;
     }
-
     if (file != NULL)
     {
        while (count < mat_size)
@@ -170,9 +169,7 @@ void generate_paths(int paths_length, int matPath[]) {
 }
 
 void berechnung_laenge_fahrzeit(int matResult[][RESULT_COL_SIZE], int matPath[], int matDistance[][MAX_SIZE], int matVitesse[][MAX_SIZE], int paths_length){
-
-    printf("berechnung_laenge_fahrzeit start\n");
-
+//     printf("berechnung_laenge_fahrzeit start\n");
     int path = 0;
     char pathStr[NUMBER_OF_NODES+3];
     int matIndices[NUMBER_OF_NODES];
@@ -193,11 +190,10 @@ void berechnung_laenge_fahrzeit(int matResult[][RESULT_COL_SIZE], int matPath[],
                   ind = atoi(cmr);
                   matResult[col][mr] = ind;
                   matIndices[mr] = ind;
-                  printf("ind %d \n", ind);
+//                   printf("ind %d \n", ind);
               }
               matResult[col][RESULT_COL_SIZE-2] = calculate_distance(matDistance, matIndices, len_path-1);
-              matResult[col][RESULT_COL_SIZE-1] = calculate_vitesse(matDistance, matVitesse, matIndices, len_path-1);
-              
+              matResult[col][RESULT_COL_SIZE-1] = calculate_vitesse(matDistance, matVitesse, matIndices, len_path-1);             
 //               printf("path %d \n", path);
             }
             else
@@ -205,9 +201,8 @@ void berechnung_laenge_fahrzeit(int matResult[][RESULT_COL_SIZE], int matPath[],
                break;
             }
         }
-    }
-    
-     printf("berechnung_laenge_fahrzeit start\n");
+    }    
+//      printf("berechnung_laenge_fahrzeit end\n");
 }
 
 
@@ -340,7 +335,7 @@ int calculate_distance(int matDistance[][MAX_SIZE], int matIndices[], int num_ad
 }
 
 int calculate_vitesse(int matDistance[][MAX_SIZE], int matVitesse[][MAX_SIZE], int matIndices[], int num_addition) {
-   double result = 0;
+   float result = 0;
    int i = 0;
    const int hour_in_minute = 60;
    int j = 0;
@@ -350,7 +345,7 @@ int calculate_vitesse(int matDistance[][MAX_SIZE], int matVitesse[][MAX_SIZE], i
      if (matVitesse[i][i+1] != 0) {
         j  = matIndices[i];
         k  = matIndices[i+1];
-        result += matDistance[j-1][k-1]*hour_in_minute/matVitesse[j-1][k-1];
+        result += (float)matDistance[j-1][k-1]*hour_in_minute/matVitesse[j-1][k-1];
      }
      ++i;
    }  
